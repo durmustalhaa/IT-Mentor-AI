@@ -141,12 +141,27 @@ CONCEPT_QUESTION_PATTERN = re.compile(r"^what is an? \b", re.IGNORECASE)
 # "honestly labeled guess"), ama sıradan bir selamlaşmada aynı uyarı hem
 # anlamsız hem rahatsız edici - burada "eğitim verisi" diye bir kavram
 # zaten yok. Bu yüzden sadece sohbet mesajlarında uyarı bastırılıyor.
+#
+# İki bilinen eksik canlı testte bulundu (bkz. 05_Roadmap.md, GUI
+# ekran görüntüsüyle doğrulandı): (1) desen SADECE sorunun TAMAMI çıplak
+# bir selamlaşma kelimesiyse eşleşiyordu (`^...$` - baştan sona) - "hello,
+# i have a question for you" gibi doğal bir cümleye gömülü selamlaşma hiç
+# yakalanmıyordu. (2) "how are you" hiç kapsanmıyordu, sadece Türkçe
+# karşılıkları ("naber"/"nasılsın") vardı. Düzeltme: `$` çapasını
+# kaldırıp sadece sorunun BAŞINDA bir selamlaşma olması yeterli kılındı
+# (yine de `\b` ile korunuyor - "history" gibi bir kelimenin "hi" ile
+# başlaması yüzünden yanlışlıkla eşleşmemesi için, "hi" sonrası "story"
+# ile aynı kelimenin devamı olduğundan kelime sınırı orada oluşmuyor).
+# Bu sadece DÜŞÜK-GÜVEN/generative-fallback dalındaki uyarı etiketini
+# gösterip göstermeme kararını etkiliyor - gerçek RAG eşleşmesi bulunan
+# hiçbir soruyu etkilemiyor (bu desen sadece o dalda kontrol ediliyor).
 CASUAL_CHAT_PATTERN = re.compile(
     r"^(selam\w*|merhaba\w*|hey+|hi+|hello\w*|naber|n'aber|nasılsın\w*|"
     r"nasilsin\w*|iyi misin\w*|günaydın\w*|gunaydin\w*|iyi ak[sş]amlar\w*|"
     r"iyi geceler|te[sş]ekkür\w*|sa[gğ]ol\w*|thanks?\w*|thank you|"
+    r"how are you\w*|how('s| is) it going\w*|"
     r"g[oö]r[uü][sş][uü]r[uü]z\w*|bye+|ho[sş][cç]a ?kal\w*|kimsin\w*|"
-    r"nesin\w*|ne haber|selamlar)[\s!.,?]*$",
+    r"nesin\w*|ne haber|selamlar)\b[\s!.,?]*",
     re.IGNORECASE
 )
 

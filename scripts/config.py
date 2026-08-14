@@ -255,6 +255,29 @@ SOURCES = {
         "recursive": False
     },
 
+    "tar-docs": {
+        # GNU tar'ın kendi doc/ klasöründe İKİ belge var: tar.texi (13,651
+        # satırlık tam kılavuz, çoğu tutorial/anlatı içeriği) ve tar.1 (kendi
+        # troff man sayfası, sade referans). tldr'nin tar kapsamı sadece 2
+        # flag'i belgeliyordu (--directory, --wildcards) - GNU tar'ın gerçek
+        # ~100 seçeneğinin neredeyse hiçbiri yoktu (coreutils/grep'in eklenme
+        # sebebiyle aynı desen). tar.1'i seçtik, tar.texi'yi değil - zaten
+        # kurulu troff-man parser'ı (cron/iptables/ufw için sertleştirilmiş)
+        # doğrudan kullanılabiliyor, hiç yeni parser gerekmedi; ayrıca tar.1
+        # `.SH OPTIONS` altında `.SS` alt bölümleriyle (Compression options,
+        # Local file selection...) organize - troff_clean_line zaten `.SS`'i
+        # boş string'e çeviriyor (SH/TH ile aynı muamele), yani alt bölüm
+        # başlıkları hiçbir flag'in açıklamasına sızmıyor, kontrol edildi.
+        # extension=".1" ile doc/ klasöründeki .texi dosyaları otomatik
+        # dışarıda kalıyor.
+        "allowed_dirs": [
+            "doc"
+        ],
+        "extension": ".1",
+        "format": "troff-man",
+        "recursive": False
+    },
+
     "ssh-docs": {
         # OpenSSH'ın kendi kılavuz sayfaları - BSD mdoc formatında
         # (.Sh/.Nm/.Bl/.It Fl/.Ar/.Xr...), troff-man'den (crontab/iptables/

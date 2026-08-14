@@ -2286,6 +2286,25 @@ def parse_troff_man(doc):
     options_text = sections.get("OPTIONS", "")
     parameters = extract_troff_options(options_text)
 
+    # GNU tar'ın kendi man sayfasında EN temel bayrakları (-c/--create,
+    # -x/--extract, -t/--list, -r/--append, -u/--update, -d/--diff,
+    # -A/--catenate, --delete, --test-label...) OPTIONS bölümünde DEĞİL,
+    # DESCRIPTION içindeki ".SS Operation mode" alt bölümünde duruyor -
+    # git'in DESCRIPTION'daki --hard/--soft/--mixed flag'leriyle aynı desen
+    # (bkz. extract_adoc_parameters/ADOC_FALLBACK_PARAMETER_SECTIONS).
+    # extract_troff_options zaten sadece gerçek ".TP" + ".B"/".BR" bayrak
+    # bloklarını kabul ediyor (10 karakter altı açıklamaları eleyerek), bu
+    # yüzden DESCRIPTION'ı da taramak diğer troff kaynaklarında (cron/
+    # iptables/ufw) yanlış pozitif riski taşımıyor - sadece gerçekten
+    # ".TP"-biçimli bayraklar varsa bir şey ekliyor.
+    description_options = extract_troff_options(description_text)
+    known_names = {p["name"] for p in parameters}
+
+    for p in description_options:
+        if p["name"] not in known_names:
+            parameters.append(p)
+            known_names.add(p["name"])
+
     if not description and not parameters:
         raise ValueError("troff-man: tanınabilir içerik bulunamadı")
 
@@ -2963,7 +2982,7 @@ for doc in documents:
 COMPLETE_REFERENCE_SOURCES = (
     "coreutils-docs", "grep-docs", "systemd-docs", "docker-docs",
     "nftables-docs", "cron-docs", "iptables-docs", "ufw-docs", "ssh-docs",
-    "apt-docs", "dnf-docs"
+    "apt-docs", "dnf-docs", "tar-docs"
 )
 
 
@@ -3048,6 +3067,16 @@ def merge_complementary_sources(records):
             for extra in tldr_records:
                 base["examples"] = base["examples"] or extra["examples"]
                 base["intents"] = (base.get("intents") or []) + (extra.get("intents") or [])
+                # troff-man (cron/iptables/ufw/tar) ve coreutils-texi gibi
+                # bazı referans kaynak parser'ları hiç syntax metni
+                # üretmiyor (boş string döner) - base burada HER ZAMAN
+                # kazandığı için (examples/intents'in aksine, syntax için
+                # "boşsa tldr'ye düş" mantığı hiç yoktu), bu kaynaklardan
+                # gelen komutlar tldr'nin GERÇEK syntax'ı olsa bile "syntax"
+                # kategorisini tamamen kaybediyordu - crontab/iptables/ufw/
+                # ls/tar'da doğrulandı, sadece kendi syntax'ını üreten
+                # gnu-manual-texi (grep) etkilenmemişti.
+                base["syntax"] = base["syntax"] or extra["syntax"]
 
             merged.append(base)
 

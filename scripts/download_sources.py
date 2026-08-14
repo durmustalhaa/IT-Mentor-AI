@@ -20,6 +20,7 @@ repos = {
     "ssh-docs": "https://github.com/openssh/openssh-portable.git",
     "apt-docs": "https://github.com/Debian/apt.git",
     "dnf-docs": "https://github.com/rpm-software-management/dnf.git",
+    "tar-docs": "https://git.savannah.gnu.org/git/tar.git",
 }
 
 for name, url in repos.items():
