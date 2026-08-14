@@ -207,11 +207,28 @@ class App:
             "<Configure>",
             lambda e: self.chat_canvas.itemconfig(self.chat_window, width=e.width)
         )
+        # Windows/macOS deliver wheel scroll as <MouseWheel> with a
+        # signed e.delta (multiples of 120 per notch). X11 (Linux)
+        # never sends <MouseWheel> at all - wheel scroll arrives as
+        # <Button-4>/<Button-5> press events instead, one per notch,
+        # no delta - binding only <MouseWheel> left the wheel doing
+        # nothing on Linux (confirmed live: GUI opened and worked on
+        # Rocky Linux/GNOME, but scrolling the chat area had no effect
+        # at all). Both are bound so either platform's event reaches
+        # the same scroll handler.
         self.chat_canvas.bind_all(
             "<MouseWheel>",
             lambda e: self.chat_canvas.yview_scroll(
                 int(-1 * (e.delta / 120) * MOUSEWHEEL_PIXELS_PER_NOTCH), "units"
             )
+        )
+        self.chat_canvas.bind_all(
+            "<Button-4>",
+            lambda e: self.chat_canvas.yview_scroll(-MOUSEWHEEL_PIXELS_PER_NOTCH, "units")
+        )
+        self.chat_canvas.bind_all(
+            "<Button-5>",
+            lambda e: self.chat_canvas.yview_scroll(MOUSEWHEEL_PIXELS_PER_NOTCH, "units")
         )
 
         # Small, persistent disclaimer pinned above the input box -
