@@ -166,6 +166,7 @@ COMMAND_BARE_FLAGS: dict = {}
 COMMAND_PARAMETER_NAMES: dict = {}
 SHORTCUT_SOURCE_COMMANDS: set = set()
 SHORTCUT_LOOKUP: dict = {}
+EXAMPLE_RECORD_BY_COMMAND: dict = {}
 parameter_mask = None
 shortcut_mask = None
 
@@ -200,7 +201,7 @@ def load(on_progress: Callable[[str], None] = print) -> None:
     güncelleyen bir fonksiyonla göstermek için kullanılır."""
     global embeddings, records, embedder, tokenizer, model
     global COMMAND_NAME_PATTERNS, COMMAND_BARE_FLAGS, COMMAND_PARAMETER_NAMES
-    global SHORTCUT_SOURCE_COMMANDS, SHORTCUT_LOOKUP
+    global SHORTCUT_SOURCE_COMMANDS, SHORTCUT_LOOKUP, EXAMPLE_RECORD_BY_COMMAND
     global parameter_mask, shortcut_mask, _loaded
 
     if _loaded:
@@ -291,6 +292,16 @@ def load(on_progress: Callable[[str], None] = print) -> None:
             pname = p.get("name", "")
             if pname:
                 COMMAND_PARAMETER_NAMES.setdefault(cname, set()).add(pname)
+
+    # Bir komutun "example" kaydı (gerçek, kaynaktan çekilmiş kullanım
+    # örnekleri - bkz. find_example_snippet) genelde aynı komut için
+    # birden fazla dilde (en/tr) tekrarlanıyor, ama response'u aynı -
+    # ilk görüleni tutmak yeterli.
+    for i, r in enumerate(records):
+        if r.get("category") == "example":
+            cname = (r.get("command") or "").lower()
+            if cname:
+                EXAMPLE_RECORD_BY_COMMAND.setdefault(cname, i)
 
     on_progress("Loading tokenizer...")
 
@@ -541,6 +552,55 @@ def generate_with_model(question: str) -> str:
     return tokenizer.decode(generated_tokens, skip_special_tokens=True)
 
 
+# ~%3.7 kayıtta (bkz. 07_RAG.md Known Limitations #6) kaynak metindeki
+# liste satır sonları extraction sırasında kaybolmuş - "Valid types
+# include: - 'bool' - 'int' - 'expiry-date'" gibi tek, uzun ve okunması
+# zor bir cümleye dönüşmüş. 2+ tekrar eden " - " (boşluk-tire-boşluk)
+# güvenilir bir liste sinyali - normal bir cümle-arası tire ("bu önemli
+# - çünkü ...") tek başına 1 kere geçer, gerçek bir liste 2+ kere
+# tekrar eder; bu sinyal zaten Known Limitations #6'nın kendi
+# tespitinde kullanıldı. "overview" gibi zaten satır satır ayrılmış ama
+# sıkışık duran listelerde de (her flag kendi satırında, ama aralarında
+# boş satır yok) öğeler arasına nefes payı ekliyoruz.
+LIST_DASH_PATTERN = re.compile(r" - ")
+BULLET_LINE_PATTERN = re.compile(r"\n(?=- )")
+
+
+def reflow_answer_text(text: str) -> str:
+    """Dataset'ten gelen metnin İÇERİĞİNE hiç dokunmadan, sadece satır
+    sonlarını düzenleyerek okunabilirliğini artırır - kelime eklenmez/
+    çıkarılmaz, sadece nereye satır/boş satır konacağı değişir."""
+    if len(LIST_DASH_PATTERN.findall(text)) >= 2:
+        text = LIST_DASH_PATTERN.sub("\n- ", text)
+
+    text = BULLET_LINE_PATTERN.sub("\n\n", text)
+    return re.sub(r"\n{3,}", "\n\n", text)
+
+
+def find_example_snippet(command: str, flag: str):
+    """Bir flag/parametre sorusunun cevabına, varsa dataset'teki
+    GERÇEK bir kullanım örneğini eklemek için kullanılır - hiçbir şey
+    uydurulmuyor, sadece "example" kategorisinde zaten duran, aynı
+    komuta ait bir kaydın ilgili parçası birleştiriliyor. Bir komutun
+    example kaydı genelde tek bir cevapta birden çok flag'i ayrı ayrı
+    örnekliyor (boş satırla ayrılmış "açıklama + ```bash bloğu"
+    parçaları halinde) - sorulan flag'in GEÇTİĞİ İLK parçayı
+    döndürüyoruz, tüm bloğu değil (ilgisiz örneklerle cevabı
+    şişirmemek için). Eşleşme yoksa None döner, hiçbir şey eklenmez."""
+    idx = EXAMPLE_RECORD_BY_COMMAND.get(command)
+
+    if idx is None:
+        return None
+
+    boundary_pattern = re.compile(r"(?<![\w-])" + re.escape(flag) + r"(?![\w-])")
+
+    for block in records[idx]["response"].split("\n\n"):
+        if boundary_pattern.search(block):
+            return block.strip()
+
+    return None
+
+
 def answer_question(question: str) -> str:
     """Bir soruyu yanıtlar - test_model.py'nin REPL döngüsündeki ana
     mantığın birebir aynısı, sadece terminale print etmek yerine temiz
@@ -552,6 +612,7 @@ def answer_question(question: str) -> str:
     restrict_mask = None
     known_command_without_data = False
     mentioned_command = None
+    token_for_exact_match = None
 
     if looks_like_shortcut_question(question):
         restrict_mask = shortcut_mask
@@ -658,12 +719,12 @@ def answer_question(question: str) -> str:
         high_confidence, low_confidence = HIGH_CONFIDENCE, LOW_CONFIDENCE
 
     if score >= high_confidence:
-        answer = match["response"]
+        answer = reflow_answer_text(match["response"])
 
     elif score >= low_confidence:
         answer = (
             f"(Closest match found - may not be exact)\n\n"
-            f"{match['response']}"
+            f"{reflow_answer_text(match['response'])}"
         )
 
     else:
@@ -686,6 +747,16 @@ def answer_question(question: str) -> str:
                 f"answer, don't trust this without verifying)\n\n"
                 f"{generated}"
             )
+
+    # Belirli bir flag sorusu gerçek veriden yanıtlandıysa (yukarıdaki
+    # iki "gerçek veri" dalından biri, generative fallback DEĞİL) ve
+    # dataset'te o flag'i gösteren GERÇEK bir kullanım örneği varsa,
+    # cevaba ekliyoruz - hiçbir şey uydurulmuyor, sadece zaten
+    # "example" kategorisinde duran, doğrulanmış bir kayıt birleştirilir.
+    if score >= low_confidence and token_for_exact_match and mentioned_command:
+        example = find_example_snippet(mentioned_command, token_for_exact_match)
+        if example:
+            answer = f"{answer}\n\nExample:\n{example}"
 
     answer = re.sub(r"```[\w-]*\n?", "", answer)
     # Kaynak markdown'daki **kalın** işaretleri düz metin arayüzde
