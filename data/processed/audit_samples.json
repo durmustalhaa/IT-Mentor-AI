@@ -1,0 +1,166 @@
+{
+  "documentation_link": [
+    {
+      "line": 7603,
+      "instruction": "Can you give me an example of how to use Use Transaction?",
+      "response": "Script by using a transaction-enabled object\n\n```powershell\nStart-Transaction\n$transactedString = New-Object Microsoft.PowerShell.Commands.Management.TransactedString\n$transactedString.Append(\"Hello\")\nUse-Transaction -TransactedScript { $transactedString.Append(\", World\") } -UseTransaction\n$transactedString.ToString()\n```\n\n```powershell\nUse-Transaction -TransactedScript { $transactedString.ToString() } -UseTransaction\n```\n\n```powershell\nComplete-Transaction\n$transactedString.ToString()\n```\n\nThis example shows how to use `Use-Transaction` to script against a transaction-enabled .NET\nFramework object. In this case, the object is a **TransactedString** object.\n\nThe first command uses the `Start-Transaction` cmdlet to start a transaction.\n\nThe second command uses the New-Object command to create a **TransactedString** object. It stores\nthe object in the `$TransactedString` variable.\n\nThe third and fourth commands both use the **Append** method of the **TransactedString** object to\nadd text to the value of `$TransactedString`. One command is part of the transaction. The other\ncommand is not.",
+      "reasons": [
+        "documentation_link"
+      ]
+    },
+    {
+      "line": 3440,
+      "instruction": "Disable PSSessionConfiguration için bir kullanım örneği verir misin?",
+      "response": "Disable the default configuration\n\nThis example disables the **Microsoft.PowerShell** session configuration.\n\n```powershell\nDisable-PSSessionConfiguration\n```",
+      "reasons": [
+        "documentation_link"
+      ]
+    },
+    {
+      "line": 18382,
+      "instruction": "cargo yank için bir kullanım örneği verir misin?",
+      "response": "Yank the specified version of a crate:\n\nUndo a yank (i.e. allow downloading it again):\n\nUse the specified registry (registry names can be defined in the configuration - the default is <https://crates.io>):",
+      "reasons": [
+        "documentation_link"
+      ]
+    },
+    {
+      "line": 16175,
+      "instruction": "What is the syntax of arjun?",
+      "response": "```text\narjun -u <https://example.com/page.php>\n```",
+      "reasons": [
+        "documentation_link"
+      ]
+    },
+    {
+      "line": 14305,
+      "instruction": "Can you give me an example of how to use netsh interface?",
+      "response": "To enable routing on the 6to4 interface named \"MyInterface\", run the following command:\n\n```cmd\nnetsh interface 6to4 set interface name=MyInterface routing=enabled\n```\n\nTo enable CLAT and allow IPv6 prefix discovery from DNS and RAs, run the following command:\n\n```cmd\nnetsh interface clat set global permit=enabled pref64fromdns=enabled pref64fromra=enabled\n```\n\nTo add a new HTTPS tunnel interface as a client with the URL `https://tunnel.example.com`, set its state to enabled and use certificate authentication, run the following command:\n\n```cmd\nnetsh interface httpstunnel add interface type=client url=\"https://tunnel.example.com\" state=enabled authmode=certificates\n```\n\nTo modify an existing HTTPS tunnel interface with the URL `https://tunnel.example.com`, set its state to disabled and authentication mode to none, run the following command:\n\n```cmd\nnetsh interface httpstunnel set interface url=\"https://tunnel.example.com\" state=disabled authmode=none\n```\n\nTo add the IPv4 address 192.168.1.10 with subnet mask 255.255.255.0 as a unicast address on the interface \"Ethernet\", set the default gateway to 192.168.1.1 and make the configuration persistent, run the following command:",
+      "reasons": [
+        "documentation_link"
+      ]
+    },
+    {
+      "line": 9917,
+      "instruction": "What does the -ApplicationName parameter of Connect WSMan do?",
+      "response": "Specifies the application name in the connection. The default value of the **ApplicationName** parameter is WSMAN. The complete identifier for the remote endpoint is in the following format: `<Transport>://<Server>:<Port>/<ApplicationName>` For example: `http://server01:8080/WSMAN` Internet Information Services (IIS), which hosts the session, forwards requests with this endpoint to the specified application.",
+      "reasons": [
+        "documentation_link"
+      ]
+    },
+    {
+      "line": 6759,
+      "instruction": "What does the -Filter parameter of Remove Item do?",
+      "response": "Specifies a filter to qualify the **Path** parameter. The FileSystem provider is the only installed PowerShell provider that supports the use of filters. You can find the syntax for the **FileSystem** filter language in about_Wildcards.",
+      "reasons": [
+        "documentation_link"
+      ]
+    },
+    {
+      "line": 55041,
+      "instruction": "What does zypper do?",
+      "response": "SUSE & openSUSE package management utility. For equivalent commands in other package managers, see <https://wiki.archlinux.org/title/Pacman/Rosetta>.",
+      "reasons": [
+        "documentation_link"
+      ]
+    },
+    {
+      "line": 5932,
+      "instruction": "Get ChildItem için bir kullanım örneği verir misin?",
+      "response": "Get child items from a file system directory\n\nThis example gets the child items from a file system directory. The filenames and subdirectory\nnames are displayed. For empty locations, the command doesn't return any output and returns to the\nPowerShell prompt.\n\nThe `Get-ChildItem` cmdlet uses the **Path** parameter to specify the directory `C:\\Test`.\n`Get-ChildItem` displays the files and directories in the PowerShell console.\n\n```powershell\nGet-ChildItem -Path C:\\Test\n```\n\nBy default `Get-ChildItem` lists the mode (**Attributes**), **LastWriteTime**, file size\n(**Length**), and the **Name** of the item. The letters in the **Mode** property can be interpreted\nas follows:\n\n- `l` (link)\n- `d` (directory)\n- `a` (archive)\n- `r` (read-only)\n- `h` (hidden)\n- `s` (system)\n\nFor more information about the mode flags, see\nabout_FileSystem_Provider.",
+      "reasons": [
+        "documentation_link"
+      ]
+    },
+    {
+      "line": 38501,
+      "instruction": "What is the syntax of sqlmap?",
+      "response": "```text\npython sqlmap.py --url \"<http://www.example.com/vuln.php?id=1>\"\n```",
+      "reasons": [
+        "documentation_link"
+      ]
+    }
+  ],
+  "syntax_only": [
+    {
+      "line": 3477,
+      "instruction": "What is the syntax of Enable PSRemoting?",
+      "response": "```\nEnable-PSRemoting [-Force] [-SkipNetworkProfileCheck] [-WhatIf] [-Confirm]\n [<",
+      "reasons": [
+        "syntax_only"
+      ]
+    },
+    {
+      "line": 3438,
+      "instruction": "Disable PSSessionConfiguration syntax nedir?",
+      "response": "```\nDisable-PSSessionConfiguration [[-Name] <String[]>] [-Force] [-NoServiceRestart] [-WhatIf] [-Confirm]\n [<",
+      "reasons": [
+        "syntax_only"
+      ]
+    },
+    {
+      "line": 4580,
+      "instruction": "Remove PSSnapin syntax nedir?",
+      "response": "```\nRemove-PSSnapin [-Name] <String[]> [-PassThru] [-WhatIf] [-Confirm] [<",
+      "reasons": [
+        "syntax_only"
+      ]
+    },
+    {
+      "line": 7826,
+      "instruction": "New FileCatalog syntax nedir?",
+      "response": "```\nNew-FileCatalog [-CatalogVersion <Int32>] [-CatalogFilePath] <String> [[-Path] <String[]>]\n [-WhatIf] [-Confirm] [<",
+      "reasons": [
+        "syntax_only"
+      ]
+    },
+    {
+      "line": 8080,
+      "instruction": "Convert String syntax nedir?",
+      "response": "```\nConvert-String [-Example <System.Collections.Generic.List`1[System.Management.Automation.PSObject]>]\n -InputObject <String> [<",
+      "reasons": [
+        "syntax_only"
+      ]
+    },
+    {
+      "line": 11457,
+      "instruction": "What is the syntax of ConvertFrom StringData?",
+      "response": "```\nConvertFrom-StringData [-StringData] <String> [[-Delimiter] <Char>] [<",
+      "reasons": [
+        "syntax_only"
+      ]
+    },
+    {
+      "line": 3426,
+      "instruction": "Disable PSRemoting syntax nedir?",
+      "response": "```\nDisable-PSRemoting [-Force] [-WhatIf] [-Confirm] [<",
+      "reasons": [
+        "syntax_only"
+      ]
+    },
+    {
+      "line": 12660,
+      "instruction": "automount syntax nedir?",
+      "response": "automount [ { enable | disable | scrub } ] [noerr]",
+      "reasons": [
+        "syntax_only"
+      ]
+    },
+    {
+      "line": 7514,
+      "instruction": "Test ComputerSecureChannel syntax nedir?",
+      "response": "```\nTest-ComputerSecureChannel [-Repair] [-Server <String>] [-Credential <PSCredential>] [-WhatIf] [-Confirm]\n [<",
+      "reasons": [
+        "syntax_only"
+      ]
+    },
+    {
+      "line": 12012,
+      "instruction": "Get Clipboard syntax nedir?",
+      "response": "```\nGet-Clipboard [-Raw] [-Delimiter <String[]>] [<",
+      "reasons": [
+        "syntax_only"
+      ]
+    }
+  ]
+}

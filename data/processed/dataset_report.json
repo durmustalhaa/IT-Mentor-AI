@@ -1,0 +1,20 @@
+{
+  "input_command_records": 6629,
+  "output_training_examples": 174623,
+  "removed_duplicate_pairs": "Exact duplicate pairs were automatically removed.",
+  "category_counts": {
+    "description": 9242,
+    "syntax": 5280,
+    "example": 4494,
+    "parameter": 142264,
+    "overview": 9216,
+    "intent": 4127
+  },
+  "limits": {
+    "description_characters": 700,
+    "example_characters": 1200,
+    "parameter_characters": 500,
+    "syntax_characters": 800,
+    "overview_characters": 15000
+  }
+}

@@ -1,0 +1,35 @@
+# Raw cloned documentation repos (huge, third-party, regenerable via
+# scripts/download_sources.py) - never push these directly, see
+# ATTRIBUTION.md for why the extracted dataset/model are handled
+# differently from the raw clones themselves.
+data/raw/
+
+# Intermediate raw-text dump (index_documents.py's output) - not
+# useful on its own without data/raw/ (which isn't published either),
+# and nothing downstream reads it once commands.json exists.
+data/processed/documents.json
+
+# Prebuilt RAG index - embeddings.npy alone is ~268MB, over GitHub's
+# 100MB hard per-file limit (push would be rejected outright). Cheap
+# to regenerate locally: `python scripts/build_index.py` (~25s) from
+# the published dataset.jsonl.
+data/processed/rag_index/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Training checkpoints - only the final model dirs are meant to be
+# published (per ATTRIBUTION.md/LICENSE), not every intermediate
+# checkpoint-*/ subfolder saved during training.
+models/*/checkpoint-*/
+
+# Local tool/editor state - meaningless outside this machine, no
+# reason to publish (session IDs, PIDs, local lock state). NOT the
+# whole .claude/ dir - .claude/skills/ holds real, useful project
+# documentation (e.g. the UI design system) worth publishing.
+.claude/scheduled_tasks.lock
+.claude/*.lock
+.vscode/

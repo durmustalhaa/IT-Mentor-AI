@@ -1,0 +1,18 @@
+{
+  "dataset_path": "data\\processed\\dataset.jsonl",
+  "total_records": 174623,
+  "invalid_json_lines": 0,
+  "invalid_line_numbers": [],
+  "empty_instructions": 0,
+  "empty_responses": 0,
+  "duplicate_instructions": 5978,
+  "duplicate_responses": 144769,
+  "duplicate_pairs": 80,
+  "responses_with_documentation_links": 1192,
+  "syntax_only_responses": 96,
+  "responses_over_1500_characters": 1128,
+  "average_response_characters": 212.95,
+  "median_response_characters": 161,
+  "maximum_response_characters": 14675,
+  "suspicious_example_count": 2404
+}
