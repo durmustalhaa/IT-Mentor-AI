@@ -33,3 +33,15 @@ models/*/checkpoint-*/
 .claude/scheduled_tasks.lock
 .claude/*.lock
 .vscode/
+
+# Internal engineering log - detailed working notes (bug-by-bug pipeline
+# history, decision rationale), not meant for the public repo. README.md
+# and ATTRIBUTION.md stay published (setup instructions + the license
+# disclosure the project specifically needs).
+01_Project_Overview.md
+02_Dataset_Pipeline.md
+03_LoRA_Training.md
+04_Testing_Results.md
+05_Roadmap.md
+06_Decisions_Log.md
+07_RAG.md
