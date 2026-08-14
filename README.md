@@ -6,9 +6,6 @@ dokümantasyondan (RAG) veya (veri yoksa) yerel bir dil modelinden
 cevaplıyor. İnternet bağlantısı sadece ilk kurulumda model indirmek
 için gerekiyor, sonrasında tamamen offline çalışır.
 
-Mimari ve tasarım kararlarının detayları için `01_Project_Overview.md`
-ile başlayan numaralı dokümanlara bakın.
-
 ## Kurulum (Windows, hızlı yol)
 
 Python (https://www.python.org/downloads/, "Add python.exe to PATH"
@@ -33,8 +30,9 @@ dahil edilmedi, `build_index.py` ile ~25 saniyede yerelde üretiliyor
 (dataset değişmediği sürece tek seferlik).
 
 Kaynaklardan itibaren dataset'i sıfırdan yeniden üretmek istersen
-`scripts/download_sources.py` ile başlayan pipeline için
-`02_Dataset_Pipeline.md`'ye bakabilirsin.
+`scripts/download_sources.py` ile başlayan pipeline kullanılabilir
+(`scripts/index_documents.py` -> `extract_commands.py` ->
+`build_dataset.py` -> `build_index.py`).
 
 ## Çalıştırma
 

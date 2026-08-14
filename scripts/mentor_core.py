@@ -28,6 +28,15 @@ from sentence_transformers import SentenceTransformer
 MODEL_NAME = "Qwen/Qwen2.5-0.5B-Instruct"
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 
+# GPU'suz makinelerde (ör. GPU'suz bir Linux VM) sabit ".to(\"cuda\")"
+# çağrısı direkt hataya düşüyordu - cihazı çalışma zamanında tespit
+# ediyoruz. float16 çoğu CPU çekirdeğinde desteklenmiyor
+# ("addmm_impl_cpu_" not implemented for 'Half' gibi hatalar veriyor),
+# bu yüzden CPU'da float32'ye düşüyoruz; CUDA varsa float16 aynen
+# kalıyor (VRAM tasarrufu için).
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+MODEL_DTYPE = torch.float16 if DEVICE == "cuda" else torch.float32
+
 INDEX_DIR = Path("data/processed/rag_index")
 EMBEDDINGS_PATH = INDEX_DIR / "embeddings.npy"
 RECORDS_PATH = INDEX_DIR / "records.json"
@@ -299,11 +308,11 @@ def load(on_progress: Callable[[str], None] = print) -> None:
 
     model = _load_with_offline_fallback(
         lambda local_files_only: AutoModelForCausalLM.from_pretrained(
-            MODEL_NAME, dtype=torch.float16, local_files_only=local_files_only
+            MODEL_NAME, dtype=MODEL_DTYPE, local_files_only=local_files_only
         ),
         on_progress
     )
-    model = model.to("cuda")
+    model = model.to(DEVICE)
     model.eval()
 
     on_progress("Model ready.")
@@ -515,7 +524,7 @@ def generate_with_model(question: str) -> str:
         add_generation_prompt=True
     )
 
-    inputs = tokenizer(text, return_tensors="pt").to("cuda")
+    inputs = tokenizer(text, return_tensors="pt").to(DEVICE)
 
     with torch.inference_mode():
         outputs = model.generate(
