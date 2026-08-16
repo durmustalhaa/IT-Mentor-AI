@@ -16,17 +16,55 @@ güvenli. Model dosyası hâlâ `models/qwen-it-mentor-v6` altında duruyor
 (silinmedi), ama hiçbir kod yolu onu yüklemiyor."""
 
 import json
+import os
 import re
 from pathlib import Path
 from typing import Callable
+
+MODEL_NAME = "Qwen/Qwen2.5-0.5B-Instruct"
+EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+
+
+def _hf_cache_dir() -> Path:
+    if "HUGGINGFACE_HUB_CACHE" in os.environ:
+        return Path(os.environ["HUGGINGFACE_HUB_CACHE"])
+
+    hf_home = Path(os.environ.get("HF_HOME", Path.home() / ".cache" / "huggingface"))
+    return hf_home / "hub"
+
+
+def _model_is_cached(repo_id: str) -> bool:
+    dirname = "models--" + repo_id.replace("/", "--")
+    snapshots = _hf_cache_dir() / dirname / "snapshots"
+    return snapshots.is_dir() and any(snapshots.iterdir())
+
+
+# `local_files_only=True` (aşağıdaki _load_with_offline_fallback) TEK
+# BAŞINA yeterli değilmiş - canlı testte (internet gerçekten kapalıyken)
+# doğrulandı: sentence-transformers/huggingface_hub bazı YARDIMCI
+# dosyalar için (processor_config.json, preprocessor_config.json) bu
+# parametreyi görmezden gelip yine de ağa HEAD isteği atıyor, internet
+# yokken 5 kez tekrar deneyip (~25 saniye, üstelik iki dosya için tekrar
+# tekrar) arayüzü kilitliyordu. HF_HUB_OFFLINE/TRANSFORMERS_OFFLINE ortam
+# değişkenleri doğru çalışması için transformers/sentence_transformers
+# İMPORT EDİLMEDEN ÖNCE set edilmiş olmalı (bu kütüphaneler değeri kendi
+# import anlarında bir kere okuyup sabitliyor - load() içinde set etmek
+# çok geç kalıyor, denendi, işe yaramadı) - bu yüzden bu kontrol,
+# torch/transformers/sentence_transformers importlarından ÖNCE, dosyanın
+# en başında yapılıyor. Modeller zaten önbellekte varsa (ikisi de) offline
+# modu zorluyoruz - hiçbir HTTP isteği denenmiyor, dolayısıyla
+# yukarıdaki gibi bir parametre tutarsızlığı artık hiç sorun olmuyor.
+# Önbellekte yoksa (gerçek ilk çalıştırma) online bırakılıyor ki indirme
+# çalışsın - aşağıdaki _load_with_offline_fallback bu durumda devreye
+# giriyor.
+if _model_is_cached(MODEL_NAME) and _model_is_cached(EMBEDDING_MODEL):
+    os.environ["HF_HUB_OFFLINE"] = "1"
+    os.environ["TRANSFORMERS_OFFLINE"] = "1"
 
 import numpy as np
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from sentence_transformers import SentenceTransformer
-
-MODEL_NAME = "Qwen/Qwen2.5-0.5B-Instruct"
-EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 
 # GPU'suz makinelerde (ör. GPU'suz bir Linux VM) sabit ".to(\"cuda\")"
 # çağrısı direkt hataya düşüyordu - cihazı çalışma zamanında tespit
