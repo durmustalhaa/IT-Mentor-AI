@@ -633,13 +633,23 @@ def resolve_adoc_conditionals(text, defined_attrs):
     return text
 
 
-def resolve_git_includes(text, doc_dir):
+def resolve_git_includes(text, doc_dir, _inherited_attrs=frozenset()):
     """git dokümanları OPTIONS bölümlerini genelde 'include::diff-options.adoc[]'
     gibi paylaşılan parça dosyalarından çekiyor - bunları çözmezsek
     git diff/log/fetch gibi komutların gerçek seçeneklerinin çoğu kayboluyor.
     Dahil edilen içerik, bu belgede tanımlanan (':attr: değer' satırlarıyla)
-    attribute'lara göre ifdef/ifndef bloklarıyla filtreleniyor."""
-    defined_attrs = set(re.findall(r"^:([\w-]+):\s*\S", text, re.MULTILINE))
+    attribute'lara göre ifdef/ifndef bloklarıyla filtreleniyor.
+
+    İÇ İÇE include'lar da (recursive) çözülüyor - eskiden "nadir" diye
+    sadece temizleniyorlardı, ama canlı testte `git log --oneline` gibi
+    çok sıradan bir flag'in bile hiç bulunamadığı ortaya çıktı:
+    `git-log.adoc` -> `include::rev-list-options.adoc[]` ->
+    `include::pretty-options.adoc[]` (bu ikinci seviyede `--oneline`
+    tanımlı) - iki seviyelik bu zincir "nadir" değil, git-log gibi
+    yaygın kullanılan komutlar için gerçek ve önemli bir yol."""
+    defined_attrs = (
+        set(re.findall(r"^:([\w-]+):\s*\S", text, re.MULTILINE)) | _inherited_attrs
+    )
 
     def replace_include(match):
         filename = match.group(1)
@@ -656,9 +666,7 @@ def resolve_git_includes(text, doc_dir):
             return ""
 
         included_text = resolve_adoc_conditionals(included_text, defined_attrs)
-
-        # Nadir iç içe include'lar çözülmeye çalışılmıyor, sadece temizleniyor.
-        included_text = re.sub(r"include::[\w./-]+\[\]\n?", "", included_text)
+        included_text = resolve_git_includes(included_text, doc_dir, defined_attrs)
 
         return included_text
 
