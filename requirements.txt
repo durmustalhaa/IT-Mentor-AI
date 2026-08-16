@@ -3,3 +3,11 @@ transformers
 sentence-transformers
 numpy
 Pillow
+
+# Sadece scripts/export_onnx.py için (model mimarisini netron.app gibi
+# bir araçla görselleştirmek amacıyla) - gui_app.py/test_model.py'nin
+# çalışması için gerekli DEĞİL, tamamen ayrı bir inceleme aracı.
+optimum
+optimum-onnx
+onnx
+onnxruntime

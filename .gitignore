@@ -26,6 +26,11 @@ venv/
 # checkpoint-*/ subfolder saved during training.
 models/*/checkpoint-*/
 
+# ONNX export (scripts/export_onnx.py) - purely for visualizing the
+# model architecture (ör. netron.app), not used by the live app at all.
+# ~2GB (model.onnx_data), regenerable locally in a couple minutes.
+onnx_model/
+
 # Local tool/editor state - meaningless outside this machine, no
 # reason to publish (session IDs, PIDs, local lock state). NOT the
 # whole .claude/ dir - .claude/skills/ holds real, useful project
