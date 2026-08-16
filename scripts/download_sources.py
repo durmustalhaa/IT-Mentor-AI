@@ -21,6 +21,7 @@ repos = {
     "apt-docs": "https://github.com/Debian/apt.git",
     "dnf-docs": "https://github.com/rpm-software-management/dnf.git",
     "tar-docs": "https://git.savannah.gnu.org/git/tar.git",
+    "compose-docs": "https://github.com/docker/compose.git",
 }
 
 for name, url in repos.items():

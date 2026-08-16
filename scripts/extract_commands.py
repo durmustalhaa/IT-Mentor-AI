@@ -2990,7 +2990,7 @@ for doc in documents:
 COMPLETE_REFERENCE_SOURCES = (
     "coreutils-docs", "grep-docs", "systemd-docs", "docker-docs",
     "nftables-docs", "cron-docs", "iptables-docs", "ufw-docs", "ssh-docs",
-    "apt-docs", "dnf-docs", "tar-docs"
+    "apt-docs", "dnf-docs", "tar-docs", "compose-docs"
 )
 
 

@@ -347,5 +347,25 @@ SOURCES = {
         "extension": ".md",
         "format": "docker-cli-md",
         "recursive": False
+    },
+
+    "compose-docs": {
+        # Docker Compose kendi AYRI reposunda yaşıyor (docker/compose,
+        # docker/cli DEĞİL) - "docker compose up/build/logs..." komutları
+        # bu yüzden docker-docs'ta hiç yoktu (confirmed: sadece Go kaynak
+        # kodu vardı, dokümantasyon yoktu). docs/reference/*.md dosyaları
+        # docker-docs ile AYNI otomatik üretilmiş format/yapıyı kullanıyor
+        # (aynı "<!---MARKER_GEN_START-->" işaretçisi, aynı "### Options"
+        # tablosu) - mevcut docker-cli-md parser'ı hiç değişiklik
+        # gerektirmeden doğrudan çalışıyor, doğrulandı. Dosya adları
+        # "compose_build.md" gibi - parser bunu otomatik "docker compose
+        # build" komut adına çeviriyor (aynı alt-çizgi-to-boşluk mantığı
+        # docker-docs'ta zaten var).
+        "allowed_dirs": [
+            "docs/reference"
+        ],
+        "extension": ".md",
+        "format": "docker-cli-md",
+        "recursive": False
     }
 }
