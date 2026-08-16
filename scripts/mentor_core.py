@@ -42,10 +42,26 @@ EMBEDDINGS_PATH = INDEX_DIR / "embeddings.npy"
 RECORDS_PATH = INDEX_DIR / "records.json"
 COMMANDS_PATH = Path("data/processed/commands.json")
 
+# Ana dataset'in (yapılandırılmış, doğrulanmış soru-cevap çiftleri) hiç
+# eşleşme bulamadığı sorularda, tahmine (generate_with_model) düşmeden
+# ÖNCE denenen ikinci bir katman - ham kaynak dokümanlardan (build_
+# raw_doc_index.py ile) çıkarılmış düz paragraflar üzerinde arama.
+# İsteğe bağlı: index dosyaları yoksa (henüz oluşturulmamışsa) bu katman
+# sessizce atlanır, hiçbir şeyi bozmaz.
+RAW_DOC_INDEX_DIR = Path("data/processed/raw_doc_index")
+RAW_DOC_EMBEDDINGS_PATH = RAW_DOC_INDEX_DIR / "embeddings.npy"
+RAW_DOC_CHUNKS_PATH = RAW_DOC_INDEX_DIR / "chunks.json"
+
 # Skor eşikleri (build_index.py ile aynı embedding modeliyle ölçüldü):
 # gerçek eşleşmeler 0.70+, ilgisiz/veri-dışı sorular 0.50 altı çıkıyor.
 HIGH_CONFIDENCE = 0.70
 LOW_CONFIDENCE = 0.55
+
+# Ham doküman katmanı, dataset'teki gibi doğrulanmış tek bir soru-cevap
+# değil, rastgele bölünmüş paragraflar üzerinde çalışıyor - bu yüzden
+# aynı mutlak skor daha az güvenilir demek, ana dataset'in HIGH_CONFIDENCE
+# eşiğinden (0.70) daha yüksek bir çıtaya ihtiyacı var.
+RAW_DOC_CONFIDENCE = 0.75
 
 # Daraltılmış aramada (sadece flag ya da sadece kısayol kayıtları) gürültü
 # zaten elendiği için, aynı mutlak skor daha güvenilir bir eşleşme anlamına
@@ -60,6 +76,8 @@ records = None
 embedder = None
 tokenizer = None
 model = None
+raw_doc_embeddings = None
+raw_doc_chunks = None
 
 FLAG_PATTERN = re.compile(r"(?:^|\s)-{1,2}[A-Za-z][\w-]*\b")
 FLAG_KEYWORDS = re.compile(r"\b(flag|parameter|parametre|option)\b", re.IGNORECASE)
@@ -96,7 +114,20 @@ BARE_FLAG_TEMPLATE_PATTERNS = (
 # file" HEPSİ aynı, tutarlı cevaba (global aramadaki en iyi eşleşmeye)
 # gidiyor - kullanıcı soruyu nasıl yazarsa yazsın aynı sonucu almalı.
 # Ayrıntılı gerekçe için bkz. find_mentioned_command.
-GENERIC_WORD_COMMAND_NAMES = {"list", "add", "tab", "service", "rename", "copy"}
+#
+# "color" de aynı sınıfa giriyor - Windows'ta gerçek, dokümante edilmiş
+# bir komut (konsol metin rengini ayarlar) ama aynı zamanda çok sıradan
+# bir kelime. 260 soruluk yapılandırılmış bir denetimde bulundu:
+# "what is your favorite color?" hiçbir uyarı etiketi olmadan `color`
+# komutunun flag verisini (renk kodları listesi) döndürüyordu -
+# INTENT_PHRASE_PATTERN'e uymuyor ("how do/can I..." kalıbı değil) ve
+# CONCEPT_QUESTION_PATTERN'e de uymuyor ("what is a/an X" değil, "what
+# is your X" - farklı bir cümle kalıbı), bu yüzden ikisi de bu durumu
+# yakalamıyordu; en basit ve zaten kanıtlanmış çözüm aynı listeye
+# eklemek.
+GENERIC_WORD_COMMAND_NAMES = {
+    "list", "add", "tab", "service", "rename", "copy", "color"
+}
 
 # "how can i copy a file over ssh?" gibi DOĞAL, niyet-biçimli sorular hiç
 # "copy" komutunu SORMUYOR - asıl cevap başka bir komutun (scp) intent
@@ -218,6 +249,7 @@ def load(on_progress: Callable[[str], None] = print) -> None:
     global COMMAND_NAME_PATTERNS, COMMAND_BARE_FLAGS, COMMAND_PARAMETER_NAMES
     global SHORTCUT_SOURCE_COMMANDS, SHORTCUT_LOOKUP, EXAMPLE_RECORD_BY_COMMAND
     global parameter_mask, shortcut_mask, _loaded
+    global raw_doc_embeddings, raw_doc_chunks
 
     if _loaded:
         return
@@ -231,6 +263,16 @@ def load(on_progress: Callable[[str], None] = print) -> None:
 
     with COMMANDS_PATH.open("r", encoding="utf-8") as f:
         commands_data = json.load(f)
+
+    # İkinci, isteğe bağlı katman (scripts/build_raw_doc_index.py) -
+    # dosyalar henüz oluşturulmamışsa (herkes bunu build etmemiş olabilir)
+    # sessizce atlanır, generative fallback eskisi gibi çalışmaya devam
+    # eder.
+    if RAW_DOC_EMBEDDINGS_PATH.exists() and RAW_DOC_CHUNKS_PATH.exists():
+        raw_doc_embeddings = np.load(RAW_DOC_EMBEDDINGS_PATH)
+
+        with RAW_DOC_CHUNKS_PATH.open("r", encoding="utf-8") as f:
+            raw_doc_chunks = json.load(f)
 
     on_progress("Loading embedding model...")
 
@@ -538,6 +580,22 @@ def retrieve(question: str, restrict_mask=None):
     return records[best_index], float(similarities[best_index])
 
 
+def search_raw_docs(question: str):
+    """Ana dataset'in (yapılandırılmış, doğrulanmış soru-cevap) hiç
+    eşleşme bulamadığı bir soruda, tahmine (generate_with_model) düşmeden
+    önce denenir - ham kaynak dokümanlardan çıkarılmış düz paragraflar
+    üzerinde arama. build_raw_doc_index.py hiç çalıştırılmamışsa
+    (raw_doc_embeddings None) sessizce None döner, hiçbir şeyi bozmaz."""
+    if raw_doc_embeddings is None:
+        return None, -1.0
+
+    query_vector = embedder.encode([question], normalize_embeddings=True)[0]
+    similarities = raw_doc_embeddings @ query_vector
+    best_index = int(np.argmax(similarities))
+
+    return raw_doc_chunks[best_index], float(similarities[best_index])
+
+
 def generate_with_model(question: str) -> str:
     """RAG'ın hiçbir iyi eşleşme bulamadığı sorularda temel Qwen2.5-
     0.5B-Instruct modelinden (LoRA adaptörü YOK - bkz. modül başındaki
@@ -753,15 +811,32 @@ def answer_question(question: str) -> str:
         # oluşturur" gibi) - temel model sohbet mesajlarını doğal
         # yanıtlarken IT sorularında da "uydurma bir referans makalesi"
         # yerine "bilmiyorum" tarzı daha dürüst bir cevap veriyor.
-        generated = generate_with_model(question)
-        if CASUAL_CHAT_PATTERN.match(question.strip()):
-            answer = generated
-        else:
+        is_casual = bool(CASUAL_CHAT_PATTERN.match(question.strip()))
+        raw_chunk, raw_score = (
+            (None, -1.0) if is_casual else search_raw_docs(question)
+        )
+
+        if raw_score >= RAW_DOC_CONFIDENCE:
+            # Yapılandırılmış dataset'te yok ama ham kaynak dokümanda
+            # ilgili bir paragraf bulundu - bu, dataset.jsonl'deki gibi
+            # doğrulanmış bir soru-cevap DEĞİL, ham metinden düz bir
+            # alıntı; modelin tahmini değil ama editoryal olarak
+            # denetlenmemiş - ikisiyle karıştırılmasın diye ayrı,
+            # kendine özgü bir etiketle gösteriliyor.
             answer = (
-                f"(No solid data on this topic - attempting a general "
-                f"answer, don't trust this without verifying)\n\n"
-                f"{generated}"
+                f"(Source documentation excerpt, not a verified answer - "
+                f"from {raw_chunk['path']})\n\n{raw_chunk['text']}"
             )
+        else:
+            generated = generate_with_model(question)
+            if is_casual:
+                answer = generated
+            else:
+                answer = (
+                    f"(No solid data on this topic - attempting a general "
+                    f"answer, don't trust this without verifying)\n\n"
+                    f"{generated}"
+                )
 
     # Belirli bir flag sorusu gerçek veriden yanıtlandıysa (yukarıdaki
     # iki "gerçek veri" dalından biri, generative fallback DEĞİL) ve

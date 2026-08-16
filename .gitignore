@@ -15,6 +15,12 @@ data/processed/documents.json
 # the published dataset.jsonl.
 data/processed/rag_index/
 
+# Same story for the raw-documentation semantic-search index (~445MB) -
+# regenerate with `python scripts/build_raw_doc_index.py` from
+# data/processed/documents.json (itself regenerated via
+# index_documents.py, needs data/raw/ present).
+data/processed/raw_doc_index/
+
 # Python
 __pycache__/
 *.pyc
