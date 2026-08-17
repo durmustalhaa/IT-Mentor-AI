@@ -377,6 +377,17 @@ class App:
         self.entry.focus_set()
         self._ready = True
 
+        # dataset.jsonl bir `git pull` ile değişip build_index.py yeniden
+        # çalıştırılmamışsa (bkz. mentor_core.dataset_hash) - eskiden bu
+        # sessizce eski veriyle çalışmaya devam ediyordu, hiç uyarı yoktu.
+        if mentor_core.index_is_stale:
+            self._add_answer(
+                "⚠ The search index doesn't match the current "
+                "dataset.jsonl (it changed since the index was last "
+                "built). Answers may be missing recent updates - run "
+                "'python scripts/build_index.py' to refresh it."
+            )
+
     def _add_question(self, text: str):
         row = tk.Frame(self.chat_frame, bg=BG)
         row.pack(fill="x", pady=(10, 2))

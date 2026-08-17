@@ -1,3 +1,4 @@
+import hashlib
 import json
 from pathlib import Path
 
@@ -8,6 +9,7 @@ DATASET_PATH = Path("data/processed/dataset.jsonl")
 INDEX_DIR = Path("data/processed/rag_index")
 EMBEDDINGS_PATH = INDEX_DIR / "embeddings.npy"
 RECORDS_PATH = INDEX_DIR / "records.json"
+META_PATH = INDEX_DIR / "meta.json"
 
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 
@@ -88,6 +90,13 @@ np.save(EMBEDDINGS_PATH, embeddings)
 
 with RECORDS_PATH.open("w", encoding="utf-8") as f:
     json.dump(records, f, ensure_ascii=False)
+
+# mentor_core.py'nin load()'da okuyup CANLI dataset.jsonl ile
+# karşılaştırdığı "bu index hangi dataset'ten üretildi" özeti - dataset
+# değişip index yeniden oluşturulmazsa kullanıcıyı uyarmak için (bkz.
+# mentor_core.dataset_hash()).
+with META_PATH.open("w", encoding="utf-8") as f:
+    json.dump({"dataset_hash": hashlib.sha256(DATASET_PATH.read_bytes()).hexdigest()}, f)
 
 print(f"\nİndeks oluşturuldu: {len(records)} kayıt")
 print(f"Embedding'ler: {EMBEDDINGS_PATH}")

@@ -8,6 +8,14 @@ import mentor_core
 
 mentor_core.load()
 
+if mentor_core.index_is_stale:
+    print(
+        "⚠ The search index doesn't match the current dataset.jsonl "
+        "(it changed since the index was last built). Answers may be "
+        "missing recent updates - run 'python scripts/build_index.py' "
+        "to refresh it.\n"
+    )
+
 print("Type 'exit' to quit.\n")
 
 while True:

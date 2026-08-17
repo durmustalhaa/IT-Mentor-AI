@@ -15,6 +15,7 @@ uydurabiliyordu - temel Qwen2.5-0.5B-Instruct modeli tek başına daha
 güvenli. Model dosyası hâlâ `models/qwen-it-mentor-v6` altında duruyor
 (silinmedi), ama hiçbir kod yolu onu yüklemiyor."""
 
+import hashlib
 import json
 import os
 import re
@@ -78,7 +79,20 @@ MODEL_DTYPE = torch.float16 if DEVICE == "cuda" else torch.float32
 INDEX_DIR = Path("data/processed/rag_index")
 EMBEDDINGS_PATH = INDEX_DIR / "embeddings.npy"
 RECORDS_PATH = INDEX_DIR / "records.json"
+INDEX_META_PATH = INDEX_DIR / "meta.json"
 COMMANDS_PATH = Path("data/processed/commands.json")
+DATASET_PATH = Path("data/processed/dataset.jsonl")
+
+
+def dataset_hash() -> str:
+    """dataset.jsonl'in içerik özeti - build_index.py bunu index'i
+    oluştururken meta.json'a kaydediyor, load() da CANLI dataset.jsonl'in
+    şu anki özetiyle karşılaştırıyor. `git pull` ile dataset.jsonl
+    değişip index yeniden oluşturulmazsa (kullanıcı unutursa/atlarsa),
+    uygulama eskiden sessizce eski veriyle çalışmaya devam ediyordu -
+    hiçbir uyarı yoktu. Artık bu uyuşmazlık tespit edilip kullanıcıya
+    gösteriliyor (bkz. load()'daki index_is_stale)."""
+    return hashlib.sha256(DATASET_PATH.read_bytes()).hexdigest()
 
 # Ana dataset'in (yapılandırılmış, doğrulanmış soru-cevap çiftleri) hiç
 # eşleşme bulamadığı sorularda, tahmine (generate_with_model) düşmeden
@@ -254,6 +268,12 @@ EXAMPLE_RECORD_BY_COMMAND: dict = {}
 parameter_mask = None
 shortcut_mask = None
 
+# True ise: dataset.jsonl, index'in oluşturulduğu andaki halinden farklı
+# (git pull ile değişmiş ama build_index.py yeniden çalıştırılmamış) -
+# bkz. dataset_hash() ve load() içindeki kontrol. gui_app.py/test_model.py
+# bunu load()'dan sonra kontrol edip kullanıcıyı uyarabilir.
+index_is_stale = False
+
 _loaded = False
 
 
@@ -287,7 +307,7 @@ def load(on_progress: Callable[[str], None] = print) -> None:
     global COMMAND_NAME_PATTERNS, COMMAND_BARE_FLAGS, COMMAND_PARAMETER_NAMES
     global SHORTCUT_SOURCE_COMMANDS, SHORTCUT_LOOKUP, EXAMPLE_RECORD_BY_COMMAND
     global parameter_mask, shortcut_mask, _loaded
-    global raw_doc_embeddings, raw_doc_chunks
+    global raw_doc_embeddings, raw_doc_chunks, index_is_stale
 
     if _loaded:
         return
@@ -298,6 +318,18 @@ def load(on_progress: Callable[[str], None] = print) -> None:
 
     with RECORDS_PATH.open("r", encoding="utf-8") as f:
         records = json.load(f)
+
+    # meta.json yoksa (bu index build_index.py'nin bu özelliği kazanmasından
+    # ÖNCE oluşturulmuş) tazelik hakkında hiçbir fikrimiz yok - o durumda
+    # UYARMIYORUZ (yanlış pozitif, gereksiz endişe yaratmaktansa sessiz
+    # kalmak tercih edildi). meta.json varsa gerçek karşılaştırma yapılıyor.
+    if INDEX_META_PATH.exists():
+        try:
+            with INDEX_META_PATH.open("r", encoding="utf-8") as f:
+                index_meta = json.load(f)
+            index_is_stale = index_meta.get("dataset_hash") != dataset_hash()
+        except (OSError, json.JSONDecodeError):
+            index_is_stale = False
 
     with COMMANDS_PATH.open("r", encoding="utf-8") as f:
         commands_data = json.load(f)
