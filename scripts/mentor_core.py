@@ -154,6 +154,24 @@ BARE_FLAG_TEMPLATE_PATTERNS = (
     re.compile(r"^(\S+) ([A-Za-z][\w-]*) ne yapar\??$", re.IGNORECASE),
 )
 
+# "what does the ERRORACTION parameter of Get-Item do?" (tiresiz/isim
+# tanınmıyor) canlı testte bulundu: "parameter" kelimesi is_flag_question'ı
+# tetikliyor ama "erroraction" hiçbir tireli/çıplak flag eşleşmesi
+# üretmiyor (ErrorAction, PowerShell'in cmdlet'e özgü olmayan "ortak
+# parametrelerinden" biri - hiç dokümante edilmiyor) - token_for_exact_match
+# None kalınca kod sessizce scope'lanmış ama KISITLANMAMIŞ bir benzerlik
+# araması yapıyor, o komutun TAMAMEN FARKLI bir parametresini (ör.
+# -UseTransaction) hiç uyarısız döndürüyordu. Ama "what parameters does
+# grep have?"/"list all grep flags" gibi GENEL "hepsini listele" sorularını
+# BOZMAMALI - onlar da aynı token_for_exact_match=None yoluna giriyor ama
+# meşru şekilde "overview" kaydına ulaşıyor. Ayrım: bu iki soru grubu
+# arasında, "the X parameter/flag/option" gibi TEKİL, BELİRLİ bir isim
+# anan bir kalıp var mı yok mu - "parameters"/"flags" (çoğul) bu kalıba
+# hiç uymuyor (\b, "parameter"i hemen takip eden "s" yüzünden orada durur).
+NAMED_PARAMETER_MENTION_PATTERN = re.compile(
+    r"\b(?:the\s+)?[A-Za-z][\w-]*\s+(?:parameter|flag|option)\b", re.IGNORECASE
+)
+
 # "list"/"add"/"tab" gibi kelimeler Windows'ta gerçek, dokümante edilmiş
 # komut adları ama aynı zamanda çok sıradan İngilizce kelimeler - "service"
 # de aynı sınıfa girdi (SysV komutu + "a portable service image" gibi
@@ -812,6 +830,17 @@ def answer_question(question: str) -> str:
 
                         if not exact_pool:
                             known_command_without_data = True
+                    elif NAMED_PARAMETER_MENTION_PATTERN.search(question):
+                        # Belirli, tekil bir parametre/flag adı anılıyor
+                        # ("the erroraction parameter") ama hiçbir tireli/
+                        # çıplak eşleşme bulunamadı - "hepsini listele"
+                        # sorularından (çoğul "parameters"/"flags", bu
+                        # kalıba hiç uymuyor) farklı olarak, kullanıcı
+                        # AÇIKÇA tek bir şeyi soruyor; hangisi olduğunu
+                        # bilmiyorsak scope'lanmış havuzda "en yakın"
+                        # BAŞKA bir parametreyi güvenle göstermek yerine
+                        # dürüst fallback'e düşmek daha güvenli.
+                        known_command_without_data = True
                 else:
                     known_command_without_data = True
             else:

@@ -1731,8 +1731,16 @@ def parse_systemd_xml(doc):
     text = preprocess_docbook_xml(doc["text"])
     root = ET.fromstring(text)
 
+    # systemd/nftables/apt <refname> içeriğini doğrudan düz metin olarak
+    # yazıyor (<refname>systemctl</refname>) ama PostgreSQL kendi
+    # <refname>'ini bir <application> etiketiyle sarıyor
+    # (<refname><application>psql</application></refname>) - ham .text
+    # bu durumda boş kalıyordu (metin iç içe çocuk elementte). docbook_text
+    # (aşağıda refpurpose için zaten kullanılıyor) iç içe etiketleri de
+    # dahil ederek düz metne çeviriyor - systemd'nin kendi (çocuksuz)
+    # <refname>'leri için de aynı sonucu veriyor, davranış değişmiyor.
     refname_el = root.find(".//refname")
-    command_name = (refname_el.text or "").strip() if refname_el is not None else doc["name"]
+    command_name = docbook_text(refname_el).strip() if refname_el is not None else doc["name"]
 
     if not command_name:
         raise ValueError("systemd-docbook-xml: refname bulunamadı")
@@ -2990,7 +2998,7 @@ for doc in documents:
 COMPLETE_REFERENCE_SOURCES = (
     "coreutils-docs", "grep-docs", "systemd-docs", "docker-docs",
     "nftables-docs", "cron-docs", "iptables-docs", "ufw-docs", "ssh-docs",
-    "apt-docs", "dnf-docs", "tar-docs", "compose-docs"
+    "apt-docs", "dnf-docs", "tar-docs", "compose-docs", "postgres-docs"
 )
 
 

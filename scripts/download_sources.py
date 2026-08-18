@@ -57,6 +57,28 @@ else:
     run("git", "fetch", "--depth", "1", "origin", "main")
     run("git", "checkout", "origin/main", "--", "man")
 
+# PostgreSQL'in tam deposu ~194MB (neredeyse tamamı C kaynak kodu) -
+# sadece ihtiyacımız olan dokümantasyon klasörünü (doc/src/sgml/ref/,
+# CLI araçlarının + SQL komutlarının referans sayfaları) sparse-checkout
+# ile çekiyoruz, systemd'yle aynı desen (orada sebep farklıydı - Windows
+# yasak karakterli dosya adları - burada sadece gereksiz hacmi önlemek
+# için).
+postgres_target = RAW / "postgres-docs"
+
+if postgres_target.exists():
+    print("postgres-docs zaten mevcut.")
+else:
+    print("postgres-docs indiriliyor (sadece doc/src/sgml/ref/ - sparse checkout)...")
+    postgres_target.mkdir(parents=True, exist_ok=True)
+    run = lambda *args: subprocess.run(args, cwd=postgres_target, check=True)
+    run("git", "init", "-q")
+    run("git", "remote", "add", "origin", "https://github.com/postgres/postgres.git")
+    run("git", "config", "core.sparseCheckout", "true")
+    run("git", "sparse-checkout", "init", "--cone")
+    run("git", "sparse-checkout", "set", "doc/src/sgml/ref")
+    run("git", "fetch", "--depth", "1", "origin", "master")
+    run("git", "checkout", "origin/master", "--", "doc/src/sgml/ref")
+
 print("Tüm kaynaklar indirildi.")
 
 print(

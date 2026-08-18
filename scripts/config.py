@@ -367,5 +367,41 @@ SOURCES = {
         "extension": ".md",
         "format": "docker-cli-md",
         "recursive": False
+    },
+
+    "postgres-docs": {
+        # PostgreSQL'in kendi doc/src/sgml/ref/ klasörü 224 dosya içeriyor
+        # ama bunların çoğu (~190) SQL DİLİ komutları (ALTER TABLE, CREATE
+        # INDEX, SELECT...) - bu ilk eklemede SADECE gerçekten kabuktan
+        # çalıştırılan CLI araçları (psql, pg_dump, createdb...) seçildi,
+        # SQL dili referansı bilinçli olarak dışarıda bırakıldı (farklı
+        # bir içerik şekli - "-flag" değil SQL cümle parçaları -, ayrı bir
+        # doğrulama turu gerektirir, kapsamı büyütmemek için ileriye
+        # bırakıldı).
+        #
+        # Format DocBook XML (systemd/nftables/apt ile aynı aile) - mevcut
+        # parser doğrudan çalıştı, tek bir küçük genelleme gerekti:
+        # PostgreSQL <refname>'i <application> ile sarıyor
+        # (<refname><application>psql</application></refname>), systemd
+        # gibi düz metin değil - parse_systemd_xml artık docbook_text()
+        # kullanıyor (zaten refpurpose için vardı), systemd'nin kendi
+        # düz-metin <refname>'lerini de bozmadan.
+        "allowed_dirs": [
+            "doc/src/sgml/ref"
+        ],
+        "extension": ".sgml",
+        "format": "systemd-docbook-xml",
+        "recursive": False,
+        "allowed_names": {
+            "psql-ref", "pg_dump", "pg_dumpall", "pg_restore",
+            "createdb", "dropdb", "clusterdb", "reindexdb", "vacuumdb",
+            "initdb", "pg_ctl-ref", "postgres-ref", "pg_config-ref",
+            "pg_controldata", "pg_rewind", "pg_resetwal", "pg_waldump",
+            "pg_walsummary", "pg_amcheck", "pg_checksums",
+            "pg_combinebackup", "pg_createsubscriber", "pg_receivewal",
+            "pg_recvlogical", "pg_verifybackup", "pgbench", "ecpg-ref",
+            "pgarchivecleanup", "pgtestfsync", "pgtesttiming", "pgupgrade",
+            "pg_isready"
+        }
     }
 }

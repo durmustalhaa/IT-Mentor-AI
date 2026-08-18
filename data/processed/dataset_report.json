@@ -1,14 +1,14 @@
 {
-  "input_command_records": 6675,
-  "output_training_examples": 178790,
+  "input_command_records": 6707,
+  "output_training_examples": 185276,
   "removed_duplicate_pairs": "Exact duplicate pairs were automatically removed.",
   "category_counts": {
-    "description": 9328,
-    "syntax": 5400,
-    "example": 4500,
-    "parameter": 146000,
-    "overview": 9388,
-    "intent": 4174
+    "description": 9392,
+    "syntax": 5464,
+    "example": 4510,
+    "parameter": 152188,
+    "overview": 9516,
+    "intent": 4206
   },
   "limits": {
     "description_characters": 700,

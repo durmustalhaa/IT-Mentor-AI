@@ -409,10 +409,38 @@ class App:
         bg_image = _rounded_rect_image(canvas_w, canvas_h, BUBBLE_RADIUS, BUBBLE_BG)
         bubble.bg_image = bg_image  # keep a reference alive
         bubble.create_image(0, 0, anchor="nw", image=bg_image)
-        bubble.create_text(
-            canvas_w / 2, canvas_h / 2, text=text, font=self.ui_font, fill=USER_COLOR,
-            width=text_w, justify="left", anchor="center"
+
+        # create_text yerine gerçek bir Text widget - Canvas metin
+        # öğeleri (create_text) Tkinter'da Label'dan bile daha kısıtlı,
+        # HİÇ seçilemiyor/kopyalanamıyor. _add_answer'ın Label yerine
+        # Text kullanma sebebiyle (yukarıdaki yorum) aynı ders burada da
+        # geçerliydi ama hiç uygulanmamıştı - kullanıcı canlı testte
+        # kendi mesajlarını kopyalayamadığını bildirdi. state="disabled"
+        # sadece düzenlemeyi engelliyor, seçim/Ctrl+C çalışmaya devam
+        # ediyor.
+        question_text = tk.Text(
+            bubble,
+            bg=BUBBLE_BG,
+            fg=USER_COLOR,
+            font=self.ui_font,
+            wrap="word",
+            relief="flat",
+            borderwidth=0,
+            highlightthickness=0,
+            padx=0,
+            pady=0,
+            insertbackground=USER_COLOR,
+            selectbackground=OUTLINE_COLOR,
+            selectforeground=USER_COLOR,
+            cursor="xterm"
         )
+        question_text.insert("1.0", text)
+        question_text.configure(state="disabled")
+        bubble.create_window(
+            canvas_w / 2, canvas_h / 2, anchor="center", window=question_text,
+            width=text_w, height=text_h
+        )
+
         self._scroll_to_bottom()
 
     def _add_answer(self, text: str):
